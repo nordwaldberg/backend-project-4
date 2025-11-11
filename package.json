@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "page-loader",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
