@@ -19,14 +19,14 @@ const downloadResource = (elem, attr, baseUrl, resourcesDir, pageHostname, $) =>
   const resourceUrl = src.startsWith('http') ? src : new URL(src, baseUrl).href
   const resourceObj = new URL(resourceUrl)
 
-  const isLocal = resourceObj.hostname === pageHostname ||
-    resourceObj.hostname.endsWith(`.${pageHostname}`)
-  
+  const isLocal = resourceObj.hostname === pageHostname
+    || resourceObj.hostname.endsWith(`.${pageHostname}`)
+
   if (!isLocal) {
     return null
   }
 
-  const filename = getResourceFileName(resourceUrl)
+  const filename = getResourceFilename(resourceUrl)
   const filepath = path.join(resourcesDir, filename)
 
   return axios
@@ -44,10 +44,11 @@ const getAbsolutePathToTarget = (filepath, targetDir) => {
   return path.join(targetDir, [targetUrl, targetFile].join('-'))
 }
 
-const getResourceFileName = (resourceUrl) => {
-  const urlData = resourceUrl.split('/')
-  const rawName = urlData[urlData.length - 1]
-  return rawName.replace(/[^a-zA-Z0-9.]/g, '-')
+const getResourceFilename = (resourceUrl) => {
+  const urlData = resourceUrl.split('/').slice(2)
+  const rawName = urlData.join('-')
+
+  return rawName.replace(/\.(?=.*\.)/g, '-')
 }
 
 const pageLoader = (url, output) => {
@@ -70,11 +71,15 @@ const pageLoader = (url, output) => {
         })
       })
 
+      $('link[rel="canonical"]').each((i, el) => {
+        $(el).attr('href', path.join(path.basename(resourcesDir), path.basename(targetPath)))
+      })
+
       return Promise.all(resourcePromises).then(() => $)
     })
     .then($ => fs.writeFile(targetPath, $.html()))
     .then(() => `open ${targetPath}`)
-    .catch(err => {
+    .catch((err) => {
       console.error('Error downloading web page:', err)
       throw err
     })
