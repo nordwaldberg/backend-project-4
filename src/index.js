@@ -67,7 +67,10 @@ const pageLoader = (url, output) => {
       resourceTypes.forEach(({ selector, attr }) => {
         $(selector).each((i, el) => {
           const p = downloadResource(el, attr, url, resourcesDir, pageUrl.hostname, $)
-          if (p) resourcePromises.push(p)
+
+          if (p !== null) {
+            resourcePromises.push(p)
+          }
         })
       })
 
