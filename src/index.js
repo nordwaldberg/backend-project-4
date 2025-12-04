@@ -3,41 +3,37 @@ import fs from 'fs/promises'
 import path from 'path'
 import * as cheerio from 'cheerio'
 
-const pageLoader = async (url, output) => {
-  const targetPath = getAbsolutePathToTarget(url, output)
-  const resourcesDir = targetPath.replace(/\.html$/, '_files')
+const resourceTypes = [
+  { selector: 'img', attr: 'src' },
+  { selector: 'link[rel="stylesheet"]', attr: 'href' },
+  { selector: 'script[src]', attr: 'src' },
+]
 
-  return axios.get(url)
-    .then(({ data: html }) => {
-      const $ = cheerio.load(html)
-      return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
-    })
-    .then(($) => {
-      const imgPromises = []
-      $('img').each((index, img) => {
-        const src = $(img).attr('src')
-        if (!src) return
+const downloadResource = (elem, attr, baseUrl, resourcesDir, pageHostname, $) => {
+  const src = $(elem).attr(attr)
 
-        const filename = getResourceFileName(src)
-        const filepath = path.join(resourcesDir, filename)
+  if (!src) {
+    return null
+  }
 
-        const imgPromise = axios
-          .get(src.startsWith('http') ? src : new URL(src, url).href, { responseType: 'arraybuffer' })
-          .then(({ data }) => fs.writeFile(filepath, data))
-          .then(() => {
-            $(img).attr('src', path.join(path.basename(resourcesDir), filename))
-          })
+  const resourceUrl = src.startsWith('http') ? src : new URL(src, baseUrl).href
+  const resourceObj = new URL(resourceUrl)
 
-        imgPromises.push(imgPromise)
-      })
+  const isLocal = resourceObj.hostname === pageHostname ||
+    resourceObj.hostname.endsWith(`.${pageHostname}`)
+  
+  if (!isLocal) {
+    return null
+  }
 
-      return Promise.all(imgPromises).then(() => $)
-    })
-    .then($ => fs.writeFile(targetPath, $.html()))
-    .then(() => `open ${targetPath}`)
-    .catch((err) => {
-      console.error('Error downloading web page:', err)
-      throw err
+  const filename = getResourceFileName(resourceUrl)
+  const filepath = path.join(resourcesDir, filename)
+
+  return axios
+    .get(resourceUrl, { responseType: 'arraybuffer' })
+    .then(({ data }) => fs.writeFile(filepath, data))
+    .then(() => {
+      $(elem).attr(attr, path.join(path.basename(resourcesDir), filename))
     })
 }
 
@@ -45,15 +41,43 @@ const getAbsolutePathToTarget = (filepath, targetDir) => {
   const urlData = filepath.replace(/https?:\/\//i, '').split('/')
   const targetUrl = urlData[0].replace(/[^a-zA-Z0-9]/g, '-')
   const targetFile = urlData[urlData.length - 1] + '.html'
-
-  return targetDir + '/' + [targetUrl, targetFile].join('-')
+  return path.join(targetDir, [targetUrl, targetFile].join('-'))
 }
 
 const getResourceFileName = (resourceUrl) => {
   const urlData = resourceUrl.split('/')
   const rawName = urlData[urlData.length - 1]
-
   return rawName.replace(/[^a-zA-Z0-9.]/g, '-')
+}
+
+const pageLoader = (url, output) => {
+  const targetPath = getAbsolutePathToTarget(url, output)
+  const resourcesDir = targetPath.replace(/\.html$/, '_files')
+  const pageUrl = new URL(url)
+
+  return axios.get(url)
+    .then(({ data: html }) => {
+      const $ = cheerio.load(html)
+      return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
+    })
+    .then(($) => {
+      const resourcePromises = []
+
+      resourceTypes.forEach(({ selector, attr }) => {
+        $(selector).each((i, el) => {
+          const p = downloadResource(el, attr, url, resourcesDir, pageUrl.hostname, $)
+          if (p) resourcePromises.push(p)
+        })
+      })
+
+      return Promise.all(resourcePromises).then(() => $)
+    })
+    .then($ => fs.writeFile(targetPath, $.html()))
+    .then(() => `open ${targetPath}`)
+    .catch(err => {
+      console.error('Error downloading web page:', err)
+      throw err
+    })
 }
 
 export default pageLoader
