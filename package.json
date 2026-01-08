@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "jest",
+    "test:debug": "jest --setupFilesAfterEnv ./__tests__/test.setup.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
@@ -26,6 +27,7 @@
     "@eslint/js": "^9.39.1",
     "@jest/globals": "^29.7.0",
     "@stylistic/eslint-plugin": "^5.5.0",
+    "axios-debug-log": "^1.0.0",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "jest": "^29.7.0",
