@@ -2,6 +2,7 @@ import axios from 'axios'
 import fs from 'fs/promises'
 import path from 'path'
 import * as cheerio from 'cheerio'
+import { downloadResource } from './downloadResource.js'
 
 const resourceTypes = [
   { selector: 'img', attr: 'src' },
@@ -9,46 +10,11 @@ const resourceTypes = [
   { selector: 'script[src]', attr: 'src' },
 ]
 
-const downloadResource = (elem, attr, baseUrl, resourcesDir, pageHostname, $) => {
-  const src = $(elem).attr(attr)
-
-  if (!src) {
-    return null
-  }
-
-  const resourceUrl = src.startsWith('http') ? src : new URL(src, baseUrl).href
-  const resourceObj = new URL(resourceUrl)
-
-  const isLocal = resourceObj.hostname === pageHostname
-    || resourceObj.hostname.endsWith(`.${pageHostname}`)
-
-  if (!isLocal) {
-    return null
-  }
-
-  const filename = getResourceFilename(resourceUrl)
-  const filepath = path.join(resourcesDir, filename)
-
-  return axios
-    .get(resourceUrl, { responseType: 'arraybuffer' })
-    .then(({ data }) => fs.writeFile(filepath, data))
-    .then(() => {
-      $(elem).attr(attr, path.join(path.basename(resourcesDir), filename))
-    })
-}
-
 const getAbsolutePathToTarget = (filepath, targetDir) => {
   const urlData = filepath.replace(/https?:\/\//i, '').split('/')
   const targetUrl = urlData[0].replace(/[^a-zA-Z0-9]/g, '-')
   const targetFile = urlData[urlData.length - 1] + '.html'
   return path.join(targetDir, [targetUrl, targetFile].join('-'))
-}
-
-const getResourceFilename = (resourceUrl) => {
-  const urlData = resourceUrl.split('/').slice(2)
-  const rawName = urlData.join('-')
-
-  return rawName.replace(/\.(?=.*\.)/g, '-')
 }
 
 const pageLoader = (url, output) => {
