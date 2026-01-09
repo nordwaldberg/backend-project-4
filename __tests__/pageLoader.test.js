@@ -2,8 +2,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import nock from 'nock'
 import { fileURLToPath } from 'url'
-import { describe, beforeAll, beforeEach, afterAll, test, expect } from '@jest/globals'
-import pageLoader from '../src/index.js'
+import { describe, beforeAll, afterAll, test, expect } from '@jest/globals'
+import pageLoader from '../src/pageLoader.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -23,7 +23,7 @@ describe('base pageLoader test', () => {
     ctx.jsBin = await fs.readFile(path.join(fixtures, 'runtime.js'))
   })
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     await fs.rm(outputDir, { recursive: true, force: true })
     await fs.mkdir(outputDir, { recursive: true })
     nock.cleanAll()
@@ -42,13 +42,13 @@ describe('base pageLoader test', () => {
       .reply(() => [200, ctx.jsBin])
 
     const result = await pageLoader(url, outputDir)
-    ctx.savedPath = result.replace('open ', '')
+    ctx.savedPath = result.replace('Page was successfully downloaded into ', '')
     ctx.expectedHtmlPath = path.join(outputDir, 'ru-hexlet-io-courses.html')
     ctx.resourcesDir = ctx.expectedHtmlPath.replace(/\.html$/, '_files')
   })
 
   test('should create correct HTML output file path', () => {
-    expect(ctx.savedPath).toBe(ctx.expectedHtmlPath)
+    expect(ctx.savedPath).toBe(`'${ctx.expectedHtmlPath}'`)
   })
 
   test('should create correct resources directory', () => {

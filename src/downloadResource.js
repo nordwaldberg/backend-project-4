@@ -9,23 +9,7 @@ const getResourceFilename = (resourceUrl) => {
   return rawName.replace(/\.(?=.*\.)/g, '-')
 }
 
-const downloadResource = (elem, attr, baseUrl, resourcesDir, pageHostname, $) => {
-  const src = $(elem).attr(attr)
-
-  if (!src) {
-    return null
-  }
-
-  const resourceUrl = src.startsWith('http') ? src : new URL(src, baseUrl).href
-  const resourceObj = new URL(resourceUrl)
-
-  const isLocal = resourceObj.hostname === pageHostname
-    || resourceObj.hostname.endsWith(`.${pageHostname}`)
-
-  if (!isLocal) {
-    return null
-  }
-
+const downloadResource = (elem, attr, resourceUrl, resourcesDir, $) => {
   const filename = getResourceFilename(resourceUrl)
   const filepath = path.join(resourcesDir, filename)
 

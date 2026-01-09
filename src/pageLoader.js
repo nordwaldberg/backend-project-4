@@ -3,9 +3,9 @@ import fs from 'fs/promises'
 import path from 'path'
 import * as cheerio from 'cheerio'
 import debug from 'debug'
+import Listr from 'listr'
 import { downloadResource } from './downloadResource.js'
 
-debug.enable('page-loader')
 const log = debug('page-loader')
 
 const resourceTypes = [
@@ -23,27 +23,45 @@ const getAbsolutePathToTarget = (filepath, targetDir) => {
 
 const pageLoader = (url, output) => {
   log('Downloading webpage...')
+
   const targetPath = getAbsolutePathToTarget(url, output)
   const resourcesDir = targetPath.replace(/\.html$/, '_files')
   const pageUrl = new URL(url)
 
   return axios.get(url)
     .then(({ data: html }) => {
-      const $ = cheerio.load(html)
       log('Creating resources directory...')
+
+      const $ = cheerio.load(html)
       return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
     })
     .then(($) => {
       log('Downloading webpage resources...')
-      const resourcePromises = []
+
+      const resourcesTasks = []
 
       resourceTypes.forEach(({ selector, attr }) => {
         $(selector).each((i, el) => {
-          const p = downloadResource(el, attr, url, resourcesDir, pageUrl.hostname, $)
+          const src = $(el).attr(attr)
 
-          if (p !== null) {
-            resourcePromises.push(p)
+          if (!src) {
+            return
           }
+
+          const resourceUrl = src.startsWith('http') ? src : new URL(src, url).href
+          const resourceObj = new URL(resourceUrl)
+
+          const isLocal = resourceObj.hostname === pageUrl.hostname
+            || resourceObj.hostname.endsWith(`.${pageUrl.hostname}`)
+
+          if (!isLocal) {
+            return
+          }
+
+          resourcesTasks.push({
+            title: resourceUrl,
+            task: () => downloadResource(el, attr, resourceUrl, resourcesDir, $),
+          })
         })
       })
 
@@ -51,19 +69,28 @@ const pageLoader = (url, output) => {
         $(el).attr('href', path.join(path.basename(resourcesDir), path.basename(targetPath)))
       })
 
-      return Promise.all(resourcePromises).then(() => $)
+      return new Listr(
+        resourcesTasks,
+        {
+          concurrent: true,
+          exitOnError: false,
+          renderer: process.env.NODE_ENV === 'test' ? 'silent' : 'default',
+        }).run().then(() => $)
     })
     .then(($) => {
       log('Creating webpage html file...')
+
       return fs.writeFile(targetPath, $.html())
     })
     .then(() => {
       log('Webpage was successfully downloaded!')
-      return `open ${targetPath}`
+
+      return `Page was successfully downloaded into '${targetPath}'`
     })
     .catch((err) => {
-      console.error('Downloading webpage error:', err)
       log(`Error! ${err}`)
+
+      console.error('Downloading webpage error:', err)
       throw err
     })
 }
