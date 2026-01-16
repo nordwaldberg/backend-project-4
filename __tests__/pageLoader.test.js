@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import nock from 'nock'
 import { fileURLToPath } from 'url'
-import { describe, beforeAll, afterAll, test, expect } from '@jest/globals'
+import { describe, beforeAll, afterAll, test, expect, afterEach, jest } from '@jest/globals'
 import pageLoader from '../src/pageLoader.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename)
 const fixtures = path.join(__dirname, '..', '__fixtures__')
 const read = f => fs.readFile(path.join(fixtures, f), 'utf8')
 
-describe('base pageLoader test', () => {
+describe('Basic functionality cases', () => {
   const url = 'https://ru.hexlet.io/courses'
   const outputDir = path.join(__dirname, 'tmp')
   let ctx = {}
@@ -79,5 +79,64 @@ describe('base pageLoader test', () => {
 
   afterAll(async () => {
     await fs.rm(outputDir, { recursive: true, force: true })
+  })
+})
+
+describe('Error handling cases', () => {
+  const url = 'https://ru.hexlet.io/courses'
+  const outputDir = path.join(__dirname, 'tmp')
+
+  afterEach(() => {
+    nock.cleanAll()
+    jest.restoreAllMocks()
+  })
+
+  afterAll(async () => {
+    await fs.rm(outputDir, { recursive: true, force: true })
+  })
+
+  test('should throw on network error while loading page', async () => {
+    nock('https://ru.hexlet.io')
+      .get('/courses')
+      .replyWithError('connection refused')
+
+    await expect(pageLoader(url, outputDir))
+      .rejects
+      .toThrow(/Network error while loading page/)
+  })
+
+  test('should throw on non-200 page response', async () => {
+    nock('https://ru.hexlet.io')
+      .get('/courses')
+      .reply(500)
+
+    await expect(pageLoader(url, outputDir))
+      .rejects
+      .toThrow(/Failed to load page/)
+  })
+
+  test('should throw on network error while loading a resource', async () => {
+    nock('https://ru.hexlet.io')
+      .get('/courses')
+      .reply(200, '<img src="/assets/professions/nodejs.png">')
+    nock('https://ru.hexlet.io')
+      .get('/assets/professions/nodejs.png')
+      .replyWithError('connection refused')
+
+    await expect(pageLoader(url, outputDir))
+      .rejects
+      .toThrow(/Network error while loading resource|Failed to load resource/)
+  })
+
+  test('should throw on HTML write error', async () => {
+    nock('https://ru.hexlet.io')
+      .get('/courses')
+      .reply(200, '<html></html>')
+
+    jest.spyOn(fs, 'writeFile').mockRejectedValueOnce(new Error('EACCES'))
+
+    await expect(pageLoader(url, outputDir))
+      .rejects
+      .toThrow(/Cannot write file/)
   })
 })
