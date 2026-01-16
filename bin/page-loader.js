@@ -13,7 +13,15 @@ program
   .option('-o, --output [dir]', 'output dir', process.cwd())
   .argument('<url>')
   .action((url, options) => {
-    pageLoader(url, options.output || process.cwd()).then(console.log)
+    pageLoader(url, options.output || process.cwd())
+      .then((result) => {
+        console.log(result)
+        process.exit(0)
+      })
+      .catch((err) => {
+        console.error(err.message)
+        process.exit(1)
+      })
   })
 
 program.parse()

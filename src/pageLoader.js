@@ -29,11 +29,22 @@ const pageLoader = (url, output) => {
   const pageUrl = new URL(url)
 
   return axios.get(url)
+    .catch((err) => {
+      log(`Error: ${err.message}`)
+
+      if (err.response) {
+        throw new Error(`Failed to load page ${url}: ${err.response.status}`)
+      }
+      throw new Error(`Network error while loading page ${url}`)
+    })
     .then(({ data: html }) => {
       log('Creating resources directory...')
 
       const $ = cheerio.load(html)
-      return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
+      return fs.mkdir(resourcesDir, { recursive: true })
+        .catch((err) => {
+          throw new Error(`Cannot create directory ${resourcesDir}: ${err.code}`)
+        }).then(() => $)
     })
     .then(($) => {
       log('Downloading webpage resources...')
@@ -73,25 +84,20 @@ const pageLoader = (url, output) => {
         resourcesTasks,
         {
           concurrent: true,
-          exitOnError: false,
           renderer: process.env.NODE_ENV === 'test' ? 'silent' : 'default',
         }).run().then(() => $)
     })
     .then(($) => {
       log('Creating webpage html file...')
 
-      return fs.writeFile(targetPath, $.html())
+      return fs.writeFile(targetPath, $.html()).catch((err) => {
+        throw new Error(`Cannot write file ${targetPath}: ${err.code}`)
+      })
     })
     .then(() => {
       log('Webpage was successfully downloaded!')
 
       return `Page was successfully downloaded into '${targetPath}'`
-    })
-    .catch((err) => {
-      log(`Error! ${err}`)
-
-      console.error('Downloading webpage error:', err)
-      throw err
     })
 }
 
