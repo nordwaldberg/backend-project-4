@@ -44,8 +44,8 @@ ___
 <div style="text-align: center">
     <img 
         src="assets/main.gif" 
-        width="550" 
-        height="340" 
+        width="620" 
+        height="370" 
         alt="demo_main"
     >
 </div>
@@ -57,8 +57,8 @@ ___
 <div style="text-align: center">
     <img 
         src="assets/debug.gif" 
-        width="550" 
-        height="340" 
+        width="620" 
+        height="370" 
         alt="demo_debug"
     >
 </div>
@@ -70,8 +70,8 @@ ___
 <div style="text-align: center">
     <img 
         src="assets/error-handling.gif" 
-        width="550" 
-        height="340" 
+        width="620" 
+        height="370" 
         alt="demo_error_handling"
     >
 </div>
