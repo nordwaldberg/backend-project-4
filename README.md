@@ -40,3 +40,38 @@ ___
 > -V, --version        output the version number </br>
 > -o, --output [dir]   output directory (default: "/home/user/current-dir") </br>
 > -h, --help           display help for command </br>
+
+<div style="text-align: center">
+    <img 
+        src="assets/main.gif" 
+        width="550" 
+        height="340" 
+        alt="demo_main"
+    >
+</div>
+
+___
+
+### 🪲 debug mode
+
+<div style="text-align: center">
+    <img 
+        src="assets/debug.gif" 
+        width="550" 
+        height="340" 
+        alt="demo_debug"
+    >
+</div>
+
+___
+
+### 🛑️ error handling
+
+<div style="text-align: center">
+    <img 
+        src="assets/error-handling.gif" 
+        width="550" 
+        height="340" 
+        alt="demo_error_handling"
+    >
+</div>
