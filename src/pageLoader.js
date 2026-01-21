@@ -40,11 +40,8 @@ const pageLoader = (url, output) => {
       log('Creating resources directory...')
 
       const $ = cheerio.load(html)
-      return fs.mkdir(resourcesDir, { recursive: true })
-        .then(() => fs.access(resourcesDir, fs.constants.W_OK))
-        .catch((err) => {
-          throw new Error(`Cannot create or write directory ${resourcesDir}: ${err.code}`)
-        }).then(() => $)
+
+      return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
     })
     .then(($) => {
       log('Downloading webpage resources...')

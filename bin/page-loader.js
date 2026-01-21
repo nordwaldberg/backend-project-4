@@ -2,6 +2,7 @@
 
 import { program } from 'commander'
 import pageLoader from '../index.js'
+import fs from 'fs/promises'
 
 program
   .name('page-loader')
@@ -13,7 +14,10 @@ program
   .option('-o, --output [dir]', 'output dir', process.cwd())
   .argument('<url>')
   .action((url, options) => {
-    pageLoader(url, options.output || process.cwd())
+    const output = options.output || process.cwd()
+
+    fs.access(output, fs.constants.W_OK)
+      .then(() => pageLoader(url, output))
       .then((result) => {
         console.log(result)
         process.exit(0)
