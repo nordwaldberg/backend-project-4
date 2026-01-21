@@ -15,13 +15,14 @@ const downloadResource = (elem, attr, resourceUrl, resourcesDir, $) => {
 
   return axios
     .get(resourceUrl, { responseType: 'arraybuffer' })
+    .then(response => response.data)
     .catch((err) => {
       if (err.response) {
         throw new Error(`Failed to load resource ${resourceUrl}: ${err.response.status}`)
       }
       throw new Error(`Network error while loading resource ${resourceUrl}`)
     })
-    .then(({ data }) => {
+    .then((data) => {
       return fs.writeFile(filepath, data)
         .catch((err) => {
           throw new Error(`Cannot write file ${filepath}: ${err.code}`)

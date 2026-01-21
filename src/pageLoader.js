@@ -29,15 +29,14 @@ const pageLoader = (url, output) => {
   const pageUrl = new URL(url)
 
   return axios.get(url)
+    .then(response => response.data)
     .catch((err) => {
-      log(`Error: ${err.message}`)
-
       if (err.response) {
         throw new Error(`Failed to load page ${url}: ${err.response.status}`)
       }
       throw new Error(`Network error while loading page ${url}`)
     })
-    .then(({ data: html }) => {
+    .then((html) => {
       log('Creating resources directory...')
 
       const $ = cheerio.load(html)
