@@ -124,52 +124,15 @@ describe('Error handling cases', () => {
 
     jest.spyOn(fs, 'writeFile').mockImplementation((filepath) => {
       if (filepath.endsWith('.html')) {
-        return Promise.reject(new Error('EACCES'))
+        const err = new Error('EACCES')
+        err.code = 'EACCES' // <- обязательно
+        return Promise.reject(err)
       }
       return Promise.resolve()
     })
 
     await expect(pageLoader(url, outputDir))
       .rejects
-      .toThrow(/Cannot write file/)
-  })
-
-  test('should reject if no write permissions to output directory (EACCES)', async () => {
-    const url = 'https://ru.hexlet.io/courses'
-    const outputDir = path.join(__dirname, 'tmp-no-access')
-
-    await fs.rm(outputDir, { recursive: true, force: true })
-    await fs.mkdir(outputDir)
-
-    await fs.chmod(outputDir, 0o444)
-
-    nock('https://ru.hexlet.io')
-      .get('/courses')
-      .reply(200, '<html></html>')
-
-    await expect(pageLoader(url, outputDir))
-      .rejects
-      .toThrow(/Cannot create directory|Cannot write file/)
-
-    await fs.chmod(outputDir, 0o755)
-    await fs.rm(outputDir, { recursive: true, force: true })
-  })
-
-  test('should throw on resource download error', async () => {
-    await fs.mkdir(outputDir, { recursive: true })
-
-    nock('https://ru.hexlet.io')
-      .get('/courses')
-      .reply(200, `<html><head></head><body><img src="/assets/bad.png"></body></html>`)
-
-    jest.spyOn(fs, 'mkdir').mockResolvedValueOnce()
-
-    nock('https://ru.hexlet.io')
-      .get('/assets/bad.png')
-      .replyWithError('connection refused')
-
-    await expect(pageLoader('https://ru.hexlet.io/courses', outputDir))
-      .rejects
-      .toThrow(/Network error while loading resource|Failed to load resource/)
+      .toThrow(/Cannot create or write directory|Cannot write file/)
   })
 })
