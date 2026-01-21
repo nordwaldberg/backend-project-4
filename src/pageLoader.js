@@ -41,7 +41,7 @@ const pageLoader = (url, output) => {
 
       const $ = cheerio.load(html)
 
-      return fs.mkdir(resourcesDir, { recursive: true }).then(() => $)
+      return fs.mkdir(resourcesDir).then(() => $)
     })
     .then(($) => {
       log('Downloading webpage resources...')
