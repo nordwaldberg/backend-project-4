@@ -59,10 +59,7 @@ const pageLoader = (url, output) => {
           const resourceUrl = src.startsWith('http') ? src : new URL(src, url).href
           const resourceObj = new URL(resourceUrl)
 
-          const isLocal = resourceObj.hostname === pageUrl.hostname
-            || resourceObj.hostname.endsWith(`.${pageUrl.hostname}`)
-
-          if (!isLocal) {
+          if (resourceObj.hostname !== pageUrl.hostname) {
             return
           }
 
