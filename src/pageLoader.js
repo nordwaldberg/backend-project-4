@@ -21,7 +21,7 @@ const getAbsolutePathToTarget = (filepath, targetDir) => {
   return path.join(targetDir, [targetUrl, targetFile].join('-'))
 }
 
-const pageLoader = (url, output) => {
+const pageLoader = (url, output = process.cwd()) => {
   log('Downloading webpage...')
 
   const targetPath = getAbsolutePathToTarget(url, output)
