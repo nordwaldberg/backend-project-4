@@ -12,6 +12,10 @@ const resourceTypes = [
   { selector: 'img', attr: 'src' },
   { selector: 'link[rel="stylesheet"]', attr: 'href' },
   { selector: 'script[src]', attr: 'src' },
+  { selector: 'a[href]', attr: 'href' },
+  { selector: 'iframe[src]', attr: 'src' },
+  { selector: 'link[rel="alternate"]', attr: 'href' },
+  { selector: 'link[rel="prefetch"]', attr: 'href' },
 ]
 
 const getAbsolutePathToTarget = (url, outputDir) => {
@@ -60,9 +64,9 @@ const pageLoader = (url, output = process.cwd()) => {
           const resourceUrl = src.startsWith('http') ? src : new URL(src, url).href
           const resourceObj = new URL(resourceUrl)
 
-          if (resourceObj.hostname !== pageUrl.hostname) {
-            return
-          }
+          if (resourceObj.hostname !== pageUrl.hostname) return
+
+          if (!path.extname(resourceObj.pathname)) return
 
           resourcesTasks.push({
             title: resourceUrl,
