@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename)
 const fixtures = path.join(__dirname, '..', '__fixtures__')
 const read = f => fs.readFile(path.join(fixtures, f), 'utf8')
 
-describe('Basic functionality cases', () => {
+describe('Positive functionality cases', () => {
   const url = 'https://ru.hexlet.io/courses'
   const outputDir = path.join(__dirname, 'tmp')
   let ctx = {}
@@ -21,34 +21,40 @@ describe('Basic functionality cases', () => {
     ctx.imageBin = await fs.readFile(path.join(fixtures, 'nodejs.png'))
     ctx.cssBin = await fs.readFile(path.join(fixtures, 'application.css'))
     ctx.jsBin = await fs.readFile(path.join(fixtures, 'runtime.js'))
-  })
 
-  beforeAll(async () => {
     await fs.rm(outputDir, { recursive: true, force: true })
     await fs.mkdir(outputDir, { recursive: true })
     nock.cleanAll()
 
+    // основной HTML
     nock('https://ru.hexlet.io')
-      .intercept('/courses', 'GET')
-      .reply(() => [200, ctx.beforeHtml])
+      .get('/courses')
+      .reply(200, ctx.beforeHtml)
+
+    // локальные ресурсы
     nock('https://ru.hexlet.io')
-      .intercept('/assets/professions/nodejs.png', 'GET')
-      .reply(() => [200, ctx.imageBin])
+      .get('/assets/professions/nodejs.png')
+      .reply(200, ctx.imageBin)
     nock('https://ru.hexlet.io')
-      .intercept('/assets/application.css', 'GET')
-      .reply(() => [200, ctx.cssBin])
+      .get('/assets/application.css')
+      .reply(200, ctx.cssBin)
     nock('https://ru.hexlet.io')
-      .intercept('/packs/js/runtime.js', 'GET')
-      .reply(() => [200, ctx.jsBin])
+      .get('/packs/js/runtime.js')
+      .reply(200, ctx.jsBin)
+
+    // canonical HTML как ресурс
+    nock('https://ru.hexlet.io')
+      .get('/courses') // canonical как отдельный ресурс
+      .reply(200, '<!DOCTYPE html><html></html>')
 
     const result = await pageLoader(url, outputDir)
-    ctx.savedPath = result.replace('Page was successfully downloaded into ', '')
+    ctx.savedPath = result.replace('Page was successfully downloaded into ', '').replace(/'/g, '')
     ctx.expectedHtmlPath = path.join(outputDir, 'ru-hexlet-io-courses.html')
     ctx.resourcesDir = ctx.expectedHtmlPath.replace(/\.html$/, '_files')
   })
 
   test('should create correct HTML output file path', () => {
-    expect(ctx.savedPath).toBe(`'${ctx.expectedHtmlPath}'`)
+    expect(ctx.savedPath).toBe(ctx.expectedHtmlPath)
   })
 
   test('should create correct resources directory', () => {
@@ -65,20 +71,20 @@ describe('Basic functionality cases', () => {
     expect(files).toContain('ru-hexlet-io-assets-professions-nodejs.png')
     expect(files).toContain('ru-hexlet-io-assets-application.css')
     expect(files).toContain('ru-hexlet-io-packs-js-runtime.js')
+    // canonical HTML
+    expect(files).toContain('ru-hexlet-io-courses.html')
   })
 
   test('downloaded resources should match original content', async () => {
     const savedImg = await fs.readFile(path.join(ctx.resourcesDir, 'ru-hexlet-io-assets-professions-nodejs.png'))
     const savedCss = await fs.readFile(path.join(ctx.resourcesDir, 'ru-hexlet-io-assets-application.css'))
     const savedJs = await fs.readFile(path.join(ctx.resourcesDir, 'ru-hexlet-io-packs-js-runtime.js'))
+    const savedHtml = await fs.readFile(path.join(ctx.resourcesDir, 'ru-hexlet-io-courses.html'), 'utf8') // <- добавили 'utf8'
 
     expect(savedImg).toStrictEqual(ctx.imageBin)
     expect(savedCss).toStrictEqual(ctx.cssBin)
     expect(savedJs).toStrictEqual(ctx.jsBin)
-  })
-
-  afterAll(async () => {
-    await fs.rm(outputDir, { recursive: true, force: true })
+    expect(savedHtml).toBe('<!DOCTYPE html><html></html>')
   })
 })
 

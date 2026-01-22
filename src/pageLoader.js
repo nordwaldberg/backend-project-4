@@ -10,12 +10,8 @@ const log = debug('page-loader')
 
 const resourceTypes = [
   { selector: 'img', attr: 'src' },
-  { selector: 'link[rel="stylesheet"]', attr: 'href' },
   { selector: 'script[src]', attr: 'src' },
-  { selector: 'a[href]', attr: 'href' },
-  { selector: 'iframe[src]', attr: 'src' },
-  { selector: 'link[rel="alternate"]', attr: 'href' },
-  { selector: 'link[rel="prefetch"]', attr: 'href' },
+  { selector: 'link[href]', attr: 'href' },
 ]
 
 const getAbsolutePathToTarget = (url, outputDir) => {
@@ -66,17 +62,14 @@ const pageLoader = (url, output = process.cwd()) => {
 
           if (resourceObj.hostname !== pageUrl.hostname) return
 
-          if (!path.extname(resourceObj.pathname)) return
+          const ext = path.extname(resourceObj.pathname)
+          if (!ext && selector !== 'link[href]') return
 
           resourcesTasks.push({
             title: resourceUrl,
             task: () => downloadResource(el, attr, resourceUrl, resourcesDir, $),
           })
         })
-      })
-
-      $('link[rel="canonical"]').each((i, el) => {
-        $(el).attr('href', path.join(path.basename(resourcesDir), path.basename(targetPath)))
       })
 
       return new Listr(

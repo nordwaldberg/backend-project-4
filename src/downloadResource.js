@@ -3,10 +3,20 @@ import axios from 'axios'
 import fs from 'fs/promises'
 
 const getResourceFilename = (resourceUrl) => {
-  const urlData = resourceUrl.split('/').slice(2)
-  const rawName = urlData.join('-')
+  const urlObj = new URL(resourceUrl)
+  const nameParts = [urlObj.hostname, ...urlObj.pathname.split('/').filter(Boolean)]
 
-  return rawName.replace(/\.(?=.*\.)/g, '-')
+  let lastPart = nameParts.pop()
+  const ext = path.extname(lastPart)
+  lastPart = lastPart.replace(/\./g, '-')
+  if (ext) lastPart = lastPart.slice(0, -ext.length) + ext
+
+  const safeParts = nameParts.map(p => p.replace(/[^a-zA-Z0-9]/g, '-'))
+  safeParts.push(lastPart)
+
+  if (!ext) safeParts[safeParts.length - 1] += '.html'
+
+  return safeParts.join('-')
 }
 
 const downloadResource = (elem, attr, resourceUrl, resourcesDir, $) => {
@@ -24,9 +34,6 @@ const downloadResource = (elem, attr, resourceUrl, resourcesDir, $) => {
     })
     .then((data) => {
       return fs.writeFile(filepath, data)
-        .catch((err) => {
-          throw new Error(`Cannot write file ${filepath}: ${err.code}`)
-        })
     })
     .then(() => {
       $(elem).attr(attr, path.join(path.basename(resourcesDir), filename))
