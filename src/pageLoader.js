@@ -14,11 +14,12 @@ const resourceTypes = [
   { selector: 'script[src]', attr: 'src' },
 ]
 
-const getAbsolutePathToTarget = (filepath, targetDir) => {
-  const urlData = filepath.replace(/https?:\/\//i, '').split('/')
-  const targetUrl = urlData[0].replace(/[^a-zA-Z0-9]/g, '-')
-  const targetFile = urlData[urlData.length - 1] + '.html'
-  return path.join(targetDir, [targetUrl, targetFile].join('-'))
+const getAbsolutePathToTarget = (url, outputDir) => {
+  const urlObj = new URL(url)
+  const segments = [urlObj.hostname, ...urlObj.pathname.split('/').filter(Boolean)]
+  const safeSegments = segments.map(s => s.replace(/[^a-zA-Z0-9]/g, '-'))
+  const filename = safeSegments.join('-') + '.html'
+  return path.join(outputDir, filename)
 }
 
 const pageLoader = (url, output = process.cwd()) => {
