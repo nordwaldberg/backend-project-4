@@ -62,9 +62,6 @@ const pageLoader = (url, output = process.cwd()) => {
 
           if (resourceObj.hostname !== pageUrl.hostname) return
 
-          const ext = path.extname(resourceObj.pathname)
-          if (!ext && selector !== 'link[href]') return
-
           resourcesTasks.push({
             title: resourceUrl,
             task: () => downloadResource(el, attr, resourceUrl, resourcesDir, $),
